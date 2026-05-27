@@ -42,7 +42,7 @@ async function userRegister(req, res) {
       password: hashedPassword,
     });
 
-    return res.status(201).json({
+    return res.status(201).json({ 
       success: true,
       message: "User create successfully",
     });
