@@ -1,6 +1,7 @@
 const User = require("../model/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { generateAccessToken } = require("../config/generateTokens");
 
 async function userRegister(req, res) {
   try {
@@ -42,7 +43,7 @@ async function userRegister(req, res) {
       password: hashedPassword,
     });
 
-    return res.status(201).json({ 
+    return res.status(201).json({
       success: true,
       message: "User create successfully",
     });
@@ -92,8 +93,10 @@ async function userLogin(req, res) {
       });
     }
 
-    const token = jwt.sign({ id: user._id }, "Junaid123", { expiresIn: "1h" });
-    res.cookie("token", token, {
+    // const token = jwt.sign({ id: user._id }, "Junaid123", { expiresIn: "1h" });
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: false,
       sameSite: "strict",
@@ -103,19 +106,20 @@ async function userLogin(req, res) {
       success: true,
       message: "Login Successfully",
       userId: user._id,
+      accessToken,
     });
   } catch (error) {
-    console.error("REGISTER ERROR:", error);
+    console.error("LOGIN ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message,
     });
   }
 }
 async function userLogout(req, res) {
   try {
-    res.clearCookie("token");
+    res.clearCookie("refreshToken");
 
     return res.status(200).json({
       success: true,
