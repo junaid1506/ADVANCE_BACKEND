@@ -139,4 +139,40 @@ async function userProfile(req, res) {
     id: req.user.id,
   });
 }
-module.exports = { userRegister, userLogin, userProfile, userLogout };
+
+async function refreshToken(req, res) {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized Token not found",
+      });
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    const acesstoken = generateAccessToken(decoded);
+
+    return res.status(200).json({
+      success: true,
+      accessToken: acesstoken,
+    });
+  } catch (error) {
+    console.error("TOKEN ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+module.exports = {
+  userRegister,
+  userLogin,
+  userProfile,
+  userLogout,
+  refreshToken,
+};

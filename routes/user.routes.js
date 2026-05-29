@@ -6,6 +6,7 @@ const {
   userLogin,
   userProfile,
   userLogout,
+  refreshToken,
 } = require("../controller/user.controller");
 const authMiddleware = require("../middleware/authMiddleware");
 const limiter = require("../middleware/rateLimiter");
@@ -15,5 +16,7 @@ router.post("/user/login", limiter, userLogin);
 router.post("/user/logout", authMiddleware, userLogout);
 
 router.get("/user/profile", authMiddleware, userProfile);
+
+router.post("/refresh-token", refreshToken);
 
 module.exports = router;
