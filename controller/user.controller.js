@@ -13,7 +13,7 @@ async function userRegister(req, res) {
       return res.status(400).json({
         success: false,
         message: "Name must be at least 3 characters",
-      });
+      }); 
     }
     if (!email || !/.+\@.+\..+/.test(email)) {
       return res.status(400).json({
