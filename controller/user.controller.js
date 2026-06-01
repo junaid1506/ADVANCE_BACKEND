@@ -117,7 +117,8 @@ async function userLogin(req, res) {
     });
   }
 }
-async function userLogout(req, res) {
+
+async function userLogout(req, res) {   
   try {
     res.clearCookie("refreshToken");
 
