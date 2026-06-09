@@ -1,13 +1,14 @@
 const jwt = require("jsonwebtoken");
 
-function generateAccessToken(user) {
+function generateAccessToken(user , sessionId) {
   return jwt.sign(
     {
       id: user._id,
+      sessionId: sessionId
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: "15m",
+      expiresIn: "5m",
     },
   );
 }

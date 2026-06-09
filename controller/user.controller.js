@@ -98,7 +98,7 @@ async function userLogin(req, res) {
     }
 
     // const token = jwt.sign({ id: user._id }, "Junaid123", { expiresIn: "1h" });
-    const accessToken = generateAccessToken(user);
+
     const refreshToken = generateRefreshToken(user);
 
     const refreshTokenHash = crypto
@@ -112,8 +112,7 @@ async function userLogin(req, res) {
       deviceIP: req.ip,
       userAgent: req.headers["user-agent"],
     });
-
-    await user.save();
+    const accessToken = generateAccessToken(user, session._id);
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: false,
@@ -180,6 +179,35 @@ async function userLogout(req, res) {
     });
   }
 }
+async function userLogoutAll(req, res) {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Refresh token not found",
+      });
+    }
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    if (!decoded || !decoded.id) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+    await Session.updateMany(
+      { user: decoded.id, revoked: false },
+      { revoked: true },
+    );
+  } catch (error) {
+    console.error("LOGOUT ALL ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Logout failed",
+    });
+  }
+}
 async function userProfile(req, res) {
   return res.status(200).json({
     success: true,
@@ -199,8 +227,49 @@ async function refreshToken(req, res) {
     }
 
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    if (!decoded || !decoded.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized Invalid token",
+      });
+    }
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized User not found",
+      });
+    }
+    const refreshTokenHash = crypto
+      .createHash("sha256")
+      .update(refreshToken)
+      .digest("hex");
+    const session = await Session.findOne({
+      user: decoded.id,
+      refreshTokenHash,
+      revoked: false,
+    });
+    if (!session) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized Session not found",
+      });
+    }
 
-    const acesstoken = generateAccessToken(user);
+    const acesstoken = generateAccessToken(user, session._id);
+    const newRefreshToken = generateRefreshToken(user);
+
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "strict",
+    });
+    const newRefreshTokenHash = crypto
+      .createHash("sha256")
+      .update(newRefreshToken)
+      .digest("hex");
+    session.refreshTokenHash = newRefreshTokenHash;
+    await session.save();
 
     return res.status(200).json({
       success: true,
@@ -212,6 +281,7 @@ async function refreshToken(req, res) {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
     });
   }
 }
