@@ -179,6 +179,7 @@ async function userLogout(req, res) {
     });
   }
 }
+
 async function userLogoutAll(req, res) {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -200,6 +201,12 @@ async function userLogoutAll(req, res) {
       { user: decoded.id, revoked: false },
       { revoked: true },
     );
+    res.clearCookie("refreshToken");
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out from all devices successfully",
+    });
   } catch (error) {
     console.error("LOGOUT ALL ERROR:", error);
     return res.status(500).json({
@@ -291,5 +298,6 @@ module.exports = {
   userLogin,
   userProfile,
   userLogout,
+  userLogoutAll,
   refreshToken,
 };
